@@ -1,0 +1,14 @@
+- **Output:** `plantnet_exif_gps.csv` — columns `PN_hash`, `exif_lat`, `exif_lon`; one row per image (306,087); blank when no GPS.
+- **Source:** EXIF GPS tags embedded in the JPEGs inside `images.zip` (Pl@ntNet-300K-v2). No external data used.
+- **Image list:** all `.jpg` entries in the zip; `PN_hash` is the filename without extension (matches `plantnet300K_metadata.csv`).
+- **Parsing:** Pillow `getexif()` → GPS IFD (tag `0x8825`); latitude = tag 2 + ref tag 1, longitude = tag 4 + ref tag 3.
+- **Conversion:** degrees/minutes/seconds → decimal degrees; `S` and `W` made negative.
+- **Failures:** unreadable or missing EXIF is left blank, not raised.
+- **Result:** 96,492 images (31.5%) have a GPS value; the file is raw and uncleaned.
+- **Known bad values:** 2,560 of those are (0,0) or out of range; they are dropped later in `plantnet_geo.csv`, leaving 93,932 valid (30.7%).
+- **Merged table:** `plantnet_geo.csv` combines the EXIF file with one external source; `plantnet_exif_gps.csv` itself is EXIF-only (this CSV is uncommitted).
+- **External source:** Pl@ntNet "observations" Darwin Core archive v1.9 (GBIF UUID `7a3679ef-5582-4aaa-81f0-8c2545cafc81`), downloaded from `https://ipt.plantnet.org/archive.do?r=observations&v=1.9` (2,592,699 records, CC-BY 4.0).
+- **Join key:** GBIF `occurrenceID` = `"o-" + PN_observation_id`; one image per observation, so the join is per image.
+- **GBIF fields used:** `decimalLatitude`, `decimalLongitude`, `coordinateUncertaintyInMeters` (median 16 m, 94% ≤ 100 m where reported).
+- **Final `lat`/`lon`:** GBIF if present, else EXIF; `source` column = `gbif`, `exif` or blank. Raw `exif_*` and `gbif_*` columns are kept.
+- **Combined coverage:** 124,508 images (40.7%); 181,579 have no location.
